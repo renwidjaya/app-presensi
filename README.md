@@ -2,6 +2,8 @@
 
 Aplikasi web absensi modern berbasis **React**, **Tailwind CSS**, dan **Express.js**, dengan fitur lengkap untuk pengelolaan kehadiran karyawan.
 
+**D[emo lihat disini](https://app-presensi.vercel.app/)**
+
 ## ✨ Fitur Utama
 
 - ✅ Login Admin
@@ -37,12 +39,12 @@ yarn dev
 
 ### **3. Konfigurasi**
 
-PORT=4000
+`PORT=4000
 DB_HOST=localhost
 DB_USER=root
 DB_PASS=yourpassword
 DB_NAME=absensi_db
-JWT_SECRET=your_jwt_secret
+JWT_SECRET=your_jwt_secret`
 
 ## **📁 Struktur Folder**
 
