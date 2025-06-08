@@ -29,13 +29,11 @@ git clone https://github.com/username/absensi-app.git
 cd absensi-app
 ```
 
-
 ### **2. Install Dependency**
 
 cd frontend
 yarn install
 yarn dev
-
 
 ### **3. Konfigurasi**
 
@@ -46,5 +44,10 @@ DB_PASS=yourpassword
 DB_NAME=absensi_db
 JWT_SECRET=your_jwt_secret
 
-
 ## **📁 Struktur Folder**
+
+absensi-app/
+├── frontend/      # React + Tailwind
+├── backend/       # Express.js API
+├── uploads/       # Foto profil dan presensi
+└── README.md
