@@ -1,12 +1,16 @@
+import { Navigate } from "react-router";
 import { BrowserRouter as Router, Routes, Route } from "react-router";
-import SignIn from "./pages/AuthPages/SignIn";
-import AppLayout from "./layout/AppLayout";
-import { ScrollToTop } from "./components/common/ScrollToTop";
+
 import Home from "./pages/Dashboard/Home";
-import ListKaryawan from "./pages/Karyawan/ListKaryawan";
+import AppLayout from "./layout/AppLayout";
+import SignIn from "./pages/AuthPages/SignIn";
+import UserProfiles from "./pages/UserProfiles";
 import ListLaporan from "./pages/Laporan/ListLaporan";
 import ListPresensi from "./pages/Presensi/ListPresensi";
-import UserProfiles from "./pages/UserProfiles";
+import ListKaryawan from "./pages/Karyawan/ListKaryawan";
+import { ScrollToTop } from "./components/common/ScrollToTop";
+
+import PublicRoute from "./routes/PublicRoute";
 import PrivateRoute from "./routes/PrivateRoute";
 
 export default function App() {
@@ -14,20 +18,25 @@ export default function App() {
     <Router>
       <ScrollToTop />
       <Routes>
-        {/* Protected Routes */}
+        {/* Public (only for non-authenticated) */}
+        <Route element={<PublicRoute />}>
+          <Route path="/signin" element={<SignIn />} />
+        </Route>
+
+        {/* Protected routes */}
         <Route element={<PrivateRoute />}>
+          {/* AppLayout with sidebar/navbar */}
           <Route element={<AppLayout />}>
             <Route index path="/" element={<Home />} />
-            <Route path="/karyawan" element={<ListKaryawan />} />
-            <Route path="/presensi" element={<ListPresensi />} />
-            <Route path="/laporan" element={<ListLaporan />} />
-            <Route path="/profile" element={<UserProfiles />} />
+            <Route path="karyawan" element={<ListKaryawan />} />
+            <Route path="presensi" element={<ListPresensi />} />
+            <Route path="laporan" element={<ListLaporan />} />
+            <Route path="profile" element={<UserProfiles />} />
           </Route>
         </Route>
 
-        {/* Public Route */}
-        <Route path="/signin" element={<SignIn />} />
-
+        {/* Fallback: redirect unknown to home or signin */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );

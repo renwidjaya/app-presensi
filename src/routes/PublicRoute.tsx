@@ -1,10 +1,8 @@
-
 import { Navigate, Outlet } from "react-router-dom";
 import LocalStorageService from "../utils/storage";
 
-export default function PrivateRoute() {
+export default function PublicRoute() {
   const isAuthenticated = Boolean(LocalStorageService.getToken());
 
-  return isAuthenticated ? <Outlet /> : <Navigate to="/signin" />;
+  return isAuthenticated ? <Navigate to="/" replace /> : <Outlet />;
 }
-

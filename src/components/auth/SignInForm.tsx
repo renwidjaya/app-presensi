@@ -1,13 +1,35 @@
-import { useState } from "react";
-import { EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
-import Input from "../form/input/InputField";
+import { login } from "../../api";
+import React, { useState } from "react";
 import Button from "../ui/button/Button";
-import { useNavigate } from "react-router";
+import Input from "../form/input/InputField";
+import { EyeCloseIcon, EyeIcon } from "../../icons";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function SignInForm() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as any)?.from?.pathname || "/";
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      await login(email, password);
+      navigate(from, { replace: true });
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Login gagal");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
@@ -15,7 +37,8 @@ export default function SignInForm() {
         <h2 className="text-2xl font-bold text-center text-gray-800 dark:text-white mb-6">
           Login Admin
         </h2>
-        <form>
+        {error && <div className="mb-4 text-red-600 text-center">{error}</div>}
+        <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
               <Label>Email</Label>
@@ -36,7 +59,14 @@ export default function SignInForm() {
                     />
                   </svg>
                 </span>
-                <Input type="email" placeholder="Email" className="pl-10" />
+                <Input
+                  type="email"
+                  placeholder="Email"
+                  className="pl-10"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
               </div>
             </div>
             <div>
@@ -46,6 +76,9 @@ export default function SignInForm() {
                   type={showPassword ? "text" : "password"}
                   placeholder="Kata sandi"
                   className="pr-10"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
                 />
                 <span
                   onClick={() => setShowPassword(!showPassword)}
@@ -60,12 +93,11 @@ export default function SignInForm() {
               </div>
             </div>
             <Button
+              type="submit"
               className="w-full bg-blue-600 hover:bg-blue-700"
-              onClick={() => {
-                navigate("/");
-              }}
+              disabled={loading}
             >
-              LOGIN
+              {loading ? "LOADING..." : "LOGIN"}
             </Button>
           </div>
         </form>
