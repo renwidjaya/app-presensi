@@ -9,6 +9,7 @@ import {
 import Badge from "../ui/badge/Badge";
 import Select from "react-select";
 import { fetchAbsensiAll, KaryawanData } from "../../api";
+import { Modal } from "../ui/modal";
 
 const months = [
   { label: "Januari", value: "01" },
@@ -31,9 +32,12 @@ const years = Array.from({ length: 5 }, (_, i) => {
 });
 
 export default function BasicTablePresensi() {
+  const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
   const [tableData, setTableData] = useState<KaryawanData[]>([]);
   const [selectedKaryawan, setSelectedKaryawan] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(
     months[new Date().getMonth()].value
   );
@@ -41,7 +45,15 @@ export default function BasicTablePresensi() {
     `${new Date().getFullYear()}`
   );
 
-  const itemsPerPage = 5;
+  const openPreview = (src: string) => {
+    setPreviewImage(src);
+    setIsPreviewOpen(true);
+  };
+
+  const closePreview = () => {
+    setPreviewImage(null);
+    setIsPreviewOpen(false);
+  };
 
   useEffect(() => {
     async function load() {
@@ -177,22 +189,34 @@ export default function BasicTablePresensi() {
                 </TableCell>
                 <TableCell className="px-4 py-3">
                   <img
-                    src={item.foto_masuk}
+                    src={item.foto_masuk || "/images/default.jpg"}
                     alt="Foto Masuk"
-                    className="w-12 h-12 rounded border object-cover"
-                    onError={(e) =>
-                      (e.currentTarget.src = "/images/default.jpg")
+                    className="w-12 h-12 rounded border object-cover cursor-pointer"
+                    onClick={() =>
+                      openPreview(item.foto_masuk || "/images/default.jpg")
                     }
+                    onError={(e) => {
+                      const fallback = "/images/default.jpg";
+                      if (e.currentTarget.src !== fallback) {
+                        e.currentTarget.src = fallback;
+                      }
+                    }}
                   />
                 </TableCell>
                 <TableCell className="px-4 py-3">
                   <img
-                    src={item.foto_pulang}
+                    src={item.foto_pulang || "/images/default.jpg"}
                     alt="Foto Pulang"
-                    className="w-12 h-12 rounded border object-cover"
-                    onError={(e) =>
-                      (e.currentTarget.src = "/images/default.jpg")
+                    className="w-12 h-12 rounded border object-cover cursor-pointer"
+                    onClick={() =>
+                      openPreview(item.foto_pulang || "/images/default.jpg")
                     }
+                    onError={(e) => {
+                      const fallback = "/images/default.jpg";
+                      if (e.currentTarget.src !== fallback) {
+                        e.currentTarget.src = fallback;
+                      }
+                    }}
                   />
                 </TableCell>
               </TableRow>
@@ -222,6 +246,26 @@ export default function BasicTablePresensi() {
           </button>
         </div>
       </div>
+
+      <Modal
+        isOpen={isPreviewOpen}
+        onClose={closePreview}
+        className="max-w-[500px] m-4"
+      >
+        <div className="p-4 flex flex-col items-center justify-center">
+          <img
+            src={previewImage ?? "/images/default.jpg"}
+            alt="Preview"
+            className="max-w-full max-h-[80vh] rounded"
+            onError={(e) => {
+              const fallback = "/images/default.jpg";
+              if (e.currentTarget.src !== fallback) {
+                e.currentTarget.src = fallback;
+              }
+            }}
+          />
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -6,7 +6,6 @@ import Input from "../form/input/InputField";
 import { useModal } from "../../hooks/useModal";
 import { fetchProfile, updateProfileForm } from "../../api";
 import LocalStorageService, { UserData } from "../../utils/storage";
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function UserMetaCard() {
   const { isOpen, openModal, closeModal } = useModal();
@@ -27,7 +26,7 @@ export default function UserMetaCard() {
     setUser(profile);
 
     if (profile?.image_profil) {
-      setPhotoUrl(`${BASE_URL}/profil/${profile.image_profil}`);
+      setPhotoUrl(profile.image_profil);
     }
   }, []);
 
@@ -78,7 +77,7 @@ export default function UserMetaCard() {
       setSelectedPhoto(null);
 
       if (refreshed.image_profil) {
-        setPhotoUrl(`${BASE_URL}/profil/${refreshed.image_profil}`);
+        setPhotoUrl(refreshed.image_profil);
       }
 
       closeModal();
@@ -97,7 +96,7 @@ export default function UserMetaCard() {
             <div className="w-20 h-20 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800">
               <img
                 src={photoUrl}
-                alt={user?.nama || "User"}
+                alt="Preview"
                 onError={() => setPhotoUrl("/images/default.jpg")}
                 className="h-full w-full object-cover"
               />

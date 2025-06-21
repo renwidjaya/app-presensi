@@ -9,8 +9,10 @@ import {
 import Badge from "../ui/badge/Badge";
 import { DownloadIcon } from "../../icons";
 import { fetchAbsensiAll, fetchExportExcel, KaryawanData } from "../../api";
+import { Modal } from "../ui/modal";
 
 export default function BasicTableLaporan() {
+  const itemsPerPage = 10;
   const [month, setMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
@@ -20,7 +22,18 @@ export default function BasicTableLaporan() {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [data, setData] = useState<KaryawanData[]>([]);
-  const itemsPerPage = 5;
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  const openPreview = (src: string) => {
+    setPreviewImage(src);
+    setIsPreviewOpen(true);
+  };
+
+  const closePreview = () => {
+    setPreviewImage(null);
+    setIsPreviewOpen(false);
+  };
 
   useEffect(() => {
     async function load() {
@@ -183,22 +196,34 @@ export default function BasicTableLaporan() {
                 </TableCell>
                 <TableCell className="px-4 py-3">
                   <img
-                    src={item.foto_masuk}
+                    src={item.foto_masuk || "/images/default.jpg"}
                     alt="Foto Masuk"
-                    className="w-12 h-12 rounded border object-cover"
-                    onError={(e) =>
-                      (e.currentTarget.src = "/images/default.jpg")
+                    className="w-12 h-12 rounded border object-cover cursor-pointer"
+                    onClick={() =>
+                      openPreview(item.foto_masuk || "/images/default.jpg")
                     }
+                    onError={(e) => {
+                      const fallback = "/images/default.jpg";
+                      if (e.currentTarget.src !== fallback) {
+                        e.currentTarget.src = fallback;
+                      }
+                    }}
                   />
                 </TableCell>
                 <TableCell className="px-4 py-3">
                   <img
-                    src={item.foto_pulang}
+                    src={item.foto_pulang || "/images/default.jpg"}
                     alt="Foto Pulang"
-                    className="w-12 h-12 rounded border object-cover"
-                    onError={(e) =>
-                      (e.currentTarget.src = "/images/default.jpg")
+                    className="w-12 h-12 rounded border object-cover cursor-pointer"
+                    onClick={() =>
+                      openPreview(item.foto_pulang || "/images/default.jpg")
                     }
+                    onError={(e) => {
+                      const fallback = "/images/default.jpg";
+                      if (e.currentTarget.src !== fallback) {
+                        e.currentTarget.src = fallback;
+                      }
+                    }}
                   />
                 </TableCell>
               </TableRow>
@@ -228,6 +253,25 @@ export default function BasicTableLaporan() {
           </button>
         </div>
       </div>
+      <Modal
+        isOpen={isPreviewOpen}
+        onClose={closePreview}
+        className="max-w-[500px] m-4"
+      >
+        <div className="p-4 flex flex-col items-center justify-center">
+          <img
+            src={previewImage ?? "/images/default.jpg"}
+            alt="Preview"
+            className="max-w-full max-h-[80vh] rounded"
+            onError={(e) => {
+              const fallback = "/images/default.jpg";
+              if (e.currentTarget.src !== fallback) {
+                e.currentTarget.src = fallback;
+              }
+            }}
+          />
+        </div>
+      </Modal>
     </div>
   );
 }

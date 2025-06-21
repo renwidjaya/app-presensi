@@ -45,7 +45,7 @@ export default function BasicTableKaryawan() {
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
 
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
   const totalPages = Math.ceil(data.length / itemsPerPage);
   const paginatedData = data.slice(
     (currentPage - 1) * itemsPerPage,
@@ -64,7 +64,7 @@ export default function BasicTableKaryawan() {
         name: item.nama_lengkap,
         jabatan: item.jabatan,
         nip: item.nip,
-        image: `/uploads/${item.image_profil}`,
+        image: item.image_profil,
         email: item.user?.email || "",
         role: item.user?.role || "KARYAWAN",
         alamat_lengkap: item.alamat_lengkap,
@@ -95,6 +95,7 @@ export default function BasicTableKaryawan() {
       }
 
       setIsOpen(false);
+      setImageFile(null);
       setEditingId(null);
       loadKaryawan();
     } catch (err) {
@@ -108,6 +109,7 @@ export default function BasicTableKaryawan() {
       ...karyawan,
       password: "",
     });
+    setImageFile(null);
     setEditingId(karyawan.id);
     setIsOpen(true);
   };
@@ -115,6 +117,17 @@ export default function BasicTableKaryawan() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+
+      if (!file.type.startsWith("image/")) {
+        alert("Hanya file gambar yang diperbolehkan");
+        return;
+      }
+
+      if (file.size > 2 * 1024 * 1024) {
+        alert("Ukuran file tidak boleh lebih dari 2MB");
+        return;
+      }
+
       const fileURL = URL.createObjectURL(file);
       setForm({ ...form, image: fileURL });
       setImageFile(file);

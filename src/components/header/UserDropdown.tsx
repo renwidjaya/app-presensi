@@ -3,25 +3,34 @@ import { useNavigate } from "react-router-dom";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import LocalStorageService, { UserData } from "../../utils/storage";
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function UserDropdown() {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
-  const [photoUrl, setPhotoUrl] = useState<string>("/images/user/default.jpg");
+  const [photoUrl, setPhotoUrl] = useState<string>("/images/default.jpg");
 
   useEffect(() => {
-    const profile = LocalStorageService.getUserData();
-    setUser(profile);
+    try {
+      const profile = LocalStorageService.getUserData();
+      console.log("UserDropdown loaded profile:", profile); // Debug log
 
-    if (profile?.image_profil) {
-      setPhotoUrl(`${BASE_URL}/profil/${profile.image_profil}`);
+      if (profile && typeof profile === "object") {
+        setUser(profile);
+
+        // Jika ada foto profil yang valid, gunakan
+        if (profile.image_profil && typeof profile.image_profil === "string") {
+          setPhotoUrl(profile.image_profil);
+        }
+      }
+    } catch (err) {
+      console.error("Gagal membaca user data dari localStorage", err);
     }
   }, []);
 
   const toggleDropdown = () => setIsOpen((prev) => !prev);
   const closeDropdown = () => setIsOpen(false);
+
   const handleSignOut = () => {
     LocalStorageService.clear();
     closeDropdown();
@@ -37,13 +46,18 @@ export default function UserDropdown() {
         <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
           <img
             src={photoUrl}
-            onError={() => setPhotoUrl("/images/default.jpg")}
-            alt={user?.nama || "User"}
+            alt="Preview"
+            onError={(e) => {
+              const fallback = "/images/default.jpg";
+              if (e.currentTarget.src !== fallback) {
+                setPhotoUrl(fallback);
+              }
+            }}
             className="h-full w-full object-cover"
           />
         </span>
         <span className="block mr-1 font-medium text-theme-sm dark:text-white">
-          {user?.nama || "Loading..."}
+          {user?.nama || "Pengguna"}
         </span>
         <svg
           className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${
