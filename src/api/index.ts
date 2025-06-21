@@ -4,9 +4,7 @@ import LocalStorageService, {
 } from "../utils/storage";
 import ApiBase from "../constans/api-base";
 
-/**
- * Interface for nested data karyawan
- */
+/** Interface untuk data karyawan */
 export interface KaryawanData {
   id_karyawan: number;
   nama_lengkap: string;
@@ -14,63 +12,45 @@ export interface KaryawanData {
   jabatan: string;
   alamat_lengkap: string;
   image_profil?: string;
+  presensis?: IPresensi[];
 }
 
-/**
- * Interface for combined user & karyawan data
- */
+interface IPresensi {
+  id_absensi: number;
+  tanggal: string;
+  jam_masuk: string;
+  jam_pulang: string;
+  lokasi_masuk: string;
+  lokasi_pulang: string;
+  total_jam_lembur: string;
+  kategori: string;
+  foto_masuk: string;
+  foto_pulang: string;
+}
+
+/** Gabungan user + karyawan */
 export type UserProfile = StoredUserData & KaryawanData;
 
-/**
- * Login user via fetch
- */
+/** Login */
 export async function login(
   email: string,
   password: string
 ): Promise<{ token: string; user: StoredUserData }> {
-  const response = await fetch(
-    `${import.meta.env.VITE_API_BASE_URL}${ApiBase.login}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    }
-  );
-  if (!response.ok) {
-    const err = await response.json();
-    throw new Error(err.message || "Login failed");
-  }
-  const result = await response.json();
-  const { token, data: user } = result;
+  const resp = await api.post(ApiBase.login, { email, password });
 
-  // Persist
+  const { token, data: user } = resp.data;
+
   LocalStorageService.setToken(token);
   LocalStorageService.setUserData(user);
 
   return { token, user };
 }
 
-/**
- * Fetch detail profile via fetch API by user ID
- */
+/** Fetch profile lengkap */
 export async function fetchProfile(id_user: number): Promise<UserProfile> {
-  const token = LocalStorageService.getToken();
-  if (!token) throw new Error("No token available");
+  const resp = await api.get(`${ApiBase.userDetail}/${id_user}`);
 
-  const resp = await fetch(
-    `${import.meta.env.VITE_API_BASE_URL}${ApiBase.userDetail}/${id_user}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
-
-  if (!resp.ok) {
-    const err = await resp.json();
-    throw new Error(err.message || "Fetch profile failed");
-  }
-
-  const json = await resp.json();
-  const { nama, email, role, karyawan } = json.data;
+  const { nama, email, role, karyawan } = resp.data.data;
 
   const merged: UserProfile = {
     id_user,
@@ -89,29 +69,21 @@ export async function fetchProfile(id_user: number): Promise<UserProfile> {
   return merged;
 }
 
-/**
- * Fetch profile photo blob using fetch
- */
+/** Ambil foto profil dari backend (Blob) */
 export async function fetchProfilePhoto(): Promise<Blob> {
   const user = LocalStorageService.getUserData();
   if (!user?.image_profil) {
     throw new Error("Profile photo not set");
   }
-  const token = LocalStorageService.getToken();
 
-  const resp = await fetch(
-    `${import.meta.env.VITE_API_BASE_URL}${ApiBase.profilPhoto}/${
-      user.image_profil
-    }`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
-  if (!resp.ok) throw new Error("Failed to fetch photo");
+  const resp = await api.get(`${ApiBase.profilPhoto}/${user.image_profil}`, {
+    responseType: "blob",
+  });
 
-  return resp.blob();
+  return resp.data;
 }
 
+/** Update data profile + foto */
 export async function updateProfileForm(fields: {
   id_user: number;
   nama: string;
@@ -131,16 +103,152 @@ export async function updateProfileForm(fields: {
   form.append("alamat_lengkap", fields.alamat_lengkap);
 
   if (fields.imageFile) {
-    form.append("image_profil", fields.imageFile); // pastikan nama field cocok dengan backend
+    form.append("image_profil", fields.imageFile); // harus match dengan backend
   }
 
   const resp = await api.post<{ message: string; data: StoredUserData }>(
     `${ApiBase.userDetail}/${fields.id_user}`,
-    form // <--- biarkan FormData dikirim tanpa header khusus
-    // jangan tambahkan "Content-Type", biarkan Axios urus sendiri
+    form,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
   );
 
   const updated = resp.data.data;
   LocalStorageService.setUserData(updated);
   return updated;
+}
+
+/** Register user baru + data karyawan */
+export async function registerUser(fields: {
+  nama: string;
+  email: string;
+  password: string;
+  role: string;
+  nip: string;
+  jabatan: string;
+  alamat_lengkap: string;
+  imageFile?: File;
+}): Promise<any> {
+  const form = new FormData();
+  form.append("nama", fields.nama);
+  form.append("email", fields.email);
+  form.append("password", fields.password);
+  form.append("role", fields.role);
+  form.append("nip", fields.nip);
+  form.append("jabatan", fields.jabatan);
+  form.append("alamat_lengkap", fields.alamat_lengkap);
+
+  if (fields.imageFile) {
+    form.append("image_profil", fields.imageFile);
+  }
+
+  const resp = await api.post(`${ApiBase.register}`, form, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+  return resp.data;
+}
+
+/** Edit user (tanpa password) */
+export async function editUserForm(fields: {
+  id_user: number;
+  nama: string;
+  email: string;
+  role: string;
+  nip: string;
+  jabatan: string;
+  alamat_lengkap: string;
+  imageFile?: File;
+}): Promise<any> {
+  const form = new FormData();
+  form.append("nama", fields.nama);
+  form.append("email", fields.email);
+  form.append("role", fields.role);
+  form.append("nip", fields.nip);
+  form.append("jabatan", fields.jabatan);
+  form.append("alamat_lengkap", fields.alamat_lengkap);
+
+  if (fields.imageFile) {
+    form.append("image_profil", fields.imageFile);
+  }
+
+  const resp = await api.post(`${ApiBase.editUser}${fields.id_user}`, form, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+  return resp.data;
+}
+
+/** Edit user termasuk password */
+export async function editUserWithPasswordForm(fields: {
+  id_user: number;
+  nama: string;
+  email: string;
+  password: string;
+  role: string;
+  nip: string;
+  jabatan: string;
+  alamat_lengkap: string;
+  imageFile?: File;
+}): Promise<any> {
+  const form = new FormData();
+  form.append("nama", fields.nama);
+  form.append("email", fields.email);
+  form.append("password", fields.password); 
+  form.append("role", fields.role);
+  form.append("nip", fields.nip);
+  form.append("jabatan", fields.jabatan);
+  form.append("alamat_lengkap", fields.alamat_lengkap);
+
+  if (fields.imageFile) {
+    form.append("image_profil", fields.imageFile);
+  }
+
+  const resp = await api.post(`${ApiBase.editUser}${fields.id_user}`, form, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+  return resp.data;
+}
+
+/** Fetch karyawan */
+export async function fetchKaryawanList(limit = 5, offset = 0) {
+  const resp = await api.get(`${ApiBase.karyawanAll}`, {
+    params: { limit, offset },
+  });
+  return resp.data; // biasanya return { data, total, message }
+}
+
+/** Fetch seluruh data absensi */
+export async function fetchAbsensiAll(tahunbulan: string): Promise<KaryawanData[]> {
+  const resp = await api.post(ApiBase.presensiList, { tahunbulan });
+  return resp.data.data;
+}
+
+/** Fetch laporan */
+export async function fetchLaporanAll(
+  tahunbulan: string
+): Promise<KaryawanData[]> {
+  const resp = await api.get(`${ApiBase.reportAll}?tahunbulan=${tahunbulan}`);
+  return resp.data.data;
+}
+
+/** Fetch download excel */
+export async function fetchExportExcel(tahunbulan: string): Promise<Blob> {
+  const response = await api.get(
+    `${ApiBase.export}?tahunbulan=${tahunbulan}`,
+    {
+      responseType: "blob", 
+    }
+  );
+  return response.data;
 }

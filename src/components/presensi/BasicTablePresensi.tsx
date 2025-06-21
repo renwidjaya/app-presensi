@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -8,80 +8,56 @@ import {
 } from "../ui/table";
 import Badge from "../ui/badge/Badge";
 import Select from "react-select";
+import { fetchAbsensiAll, KaryawanData } from "../../api";
 
-interface Presensi {
-  id_absensi: number;
-  tanggal: string;
-  jam_masuk: string;
-  jam_pulang: string;
-  lokasi_masuk: string;
-  lokasi_pulang: string;
-  total_jam_lembur: string;
-  kategori: string;
-  foto_masuk: string;
-  foto_pulang: string;
-}
-
-interface Karyawan {
-  id_karyawan: number;
-  nama_lengkap: string;
-  nip: string;
-  jabatan: string;
-  image_profil: string;
-  presensis: Presensi[];
-}
-
-const tableData: Karyawan[] = [
-  {
-    id_karyawan: 1,
-    nama_lengkap: "Rendi Widjaya",
-    nip: "199201012021011001",
-    jabatan: "Fullstack Developer",
-    image_profil: "/images/user/user-17.jpg",
-    presensis: [
-      {
-        id_absensi: 8,
-        tanggal: "2025-06-09",
-        jam_masuk: "08:00:00",
-        jam_pulang: "18:00:00",
-        lokasi_masuk: "Jl Cabe Raya",
-        lokasi_pulang: "Jl Cabe Raya",
-        total_jam_lembur: "2",
-        kategori: "MASUK_KERJA",
-        foto_masuk: "/images/presensi/presensi-1.jpg",
-        foto_pulang: "/images/presensi/presensi-2.jpg",
-      },
-      {
-        id_absensi: 5,
-        tanggal: "2025-06-08",
-        jam_masuk: "08:00:00",
-        jam_pulang: "17:00:00",
-        lokasi_masuk: "Kantor Utama",
-        lokasi_pulang: "Jl Cabe Raya",
-        total_jam_lembur: "1.5",
-        kategori: "MASUK_KERJA",
-        foto_masuk: "/images/presensi/foto-masuk.jpg",
-        foto_pulang: "/images/presensi/foto-pulang.jpg",
-      },
-    ],
-  },
-  {
-    id_karyawan: 2,
-    nama_lengkap: "Indrawan S.Kom",
-    nip: "199201012021011002",
-    jabatan: "Fullstack Developer",
-    image_profil: "/images/user/user-18.jpg",
-    presensis: [],
-  },
+const months = [
+  { label: "Januari", value: "01" },
+  { label: "Februari", value: "02" },
+  { label: "Maret", value: "03" },
+  { label: "April", value: "04" },
+  { label: "Mei", value: "05" },
+  { label: "Juni", value: "06" },
+  { label: "Juli", value: "07" },
+  { label: "Agustus", value: "08" },
+  { label: "September", value: "09" },
+  { label: "Oktober", value: "10" },
+  { label: "November", value: "11" },
+  { label: "Desember", value: "12" },
 ];
+
+const years = Array.from({ length: 5 }, (_, i) => {
+  const year = new Date().getFullYear() - i;
+  return { label: `${year}`, value: `${year}` };
+});
 
 export default function BasicTablePresensi() {
   const [currentPage, setCurrentPage] = useState(1);
+  const [tableData, setTableData] = useState<KaryawanData[]>([]);
   const [selectedKaryawan, setSelectedKaryawan] = useState<string | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState(
+    months[new Date().getMonth()].value
+  );
+  const [selectedYear, setSelectedYear] = useState(
+    `${new Date().getFullYear()}`
+  );
+
   const itemsPerPage = 5;
 
-  const allPresensi = tableData.flatMap((karyawan) =>
-    karyawan.presensis.map((p) => ({
+  useEffect(() => {
+    async function load() {
+      try {
+        const tahunbulan = `${selectedYear}-${selectedMonth}`;
+        const data = await fetchAbsensiAll(tahunbulan);
+        setTableData(data);
+      } catch (err) {
+        console.error("Gagal memuat data presensi:", err);
+      }
+    }
+    load();
+  }, [selectedMonth, selectedYear]);
+
+  const allPresensi = tableData.flatMap((karyawan: any) =>
+    karyawan.presensis.map((p: any) => ({
       ...p,
       karyawan,
     }))
@@ -97,29 +73,45 @@ export default function BasicTablePresensi() {
     currentPage * itemsPerPage
   );
 
-  const options = [
+  const karyawanOptions = [
     { value: null, label: "Semua" },
     ...tableData.map((k) => ({ value: k.nama_lengkap, label: k.nama_lengkap })),
   ];
 
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
-      <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        <div className="w-full max-w-xs">
-          <Select
-            options={options}
-            value={
-              options.find((opt) => opt.value === selectedKaryawan) ||
-              options[0]
-            }
-            onChange={(selected) => {
-              setSelectedKaryawan(selected?.value || null);
-              setCurrentPage(1);
-            }}
-            isSearchable
-            placeholder="Pilih Karyawan..."
-          />
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 px-4 pt-4 pb-2">
+        <Select
+          options={months}
+          value={months.find((m) => m.value === selectedMonth)}
+          onChange={(selected) => {
+            if (selected) setSelectedMonth(selected.value);
+            setCurrentPage(1);
+          }}
+          placeholder="Pilih Bulan"
+        />
+        <Select
+          options={years}
+          value={years.find((y) => y.value === selectedYear)}
+          onChange={(selected) => {
+            if (selected) setSelectedYear(selected.value);
+            setCurrentPage(1);
+          }}
+          placeholder="Pilih Tahun"
+        />
+        <Select
+          options={karyawanOptions}
+          value={
+            karyawanOptions.find((opt) => opt.value === selectedKaryawan) ||
+            karyawanOptions[0]
+          }
+          onChange={(selected) => {
+            setSelectedKaryawan(selected?.value || null);
+            setCurrentPage(1);
+          }}
+          isSearchable
+          placeholder="Pilih Karyawan"
+        />
       </div>
 
       <div className="max-w-full overflow-x-auto">
@@ -163,7 +155,7 @@ export default function BasicTablePresensi() {
                   <div className="text-sm font-medium text-gray-900">
                     {item.jam_masuk}
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-gray-500 italic">
                     {item.lokasi_masuk}
                   </div>
                 </TableCell>
@@ -171,7 +163,7 @@ export default function BasicTablePresensi() {
                   <div className="text-sm font-medium text-gray-900">
                     {item.jam_pulang}
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-gray-500 italic">
                     {item.lokasi_pulang}
                   </div>
                 </TableCell>
@@ -186,15 +178,21 @@ export default function BasicTablePresensi() {
                 <TableCell className="px-4 py-3">
                   <img
                     src={item.foto_masuk}
-                    alt="foto masuk"
-                    className="w-10 h-10 rounded border object-cover"
+                    alt="Foto Masuk"
+                    className="w-12 h-12 rounded border object-cover"
+                    onError={(e) =>
+                      (e.currentTarget.src = "/images/default.jpg")
+                    }
                   />
                 </TableCell>
                 <TableCell className="px-4 py-3">
                   <img
                     src={item.foto_pulang}
-                    alt="foto pulang"
-                    className="w-10 h-10 rounded border object-cover"
+                    alt="Foto Pulang"
+                    className="w-12 h-12 rounded border object-cover"
+                    onError={(e) =>
+                      (e.currentTarget.src = "/images/default.jpg")
+                    }
                   />
                 </TableCell>
               </TableRow>

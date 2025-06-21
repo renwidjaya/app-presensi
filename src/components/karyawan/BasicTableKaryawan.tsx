@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -9,9 +9,11 @@ import {
 
 import Label from "../form/Label";
 import { Modal } from "../ui/modal";
-import Badge from "../ui/badge/Badge";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
+import { editUserForm, fetchKaryawanList, registerUser } from "../../api";
+
+type RoleType = "ADMIN" | "KARYAWAN";
 
 interface Karyawan {
   id: number;
@@ -19,49 +21,15 @@ interface Karyawan {
   jabatan: string;
   nip: string;
   image: string;
-  status: "Aktif" | "Nonaktif";
   email?: string;
   password?: string;
-  role?: string;
+  role?: RoleType;
   alamat_lengkap?: string;
 }
 
 export default function BasicTableKaryawan() {
   const [currentPage, setCurrentPage] = useState(1);
-  const [data, setData] = useState<Karyawan[]>([
-    {
-      id: 1,
-      name: "Rendi Widjaya",
-      jabatan: "Fullstack Developer",
-      nip: "199201012021011001",
-      image: "/images/user/user-17.jpg",
-      status: "Aktif",
-    },
-    {
-      id: 2,
-      name: "Indrawan S.Kom",
-      jabatan: "Frontend Developer",
-      nip: "199201012021011002",
-      image: "/images/user/user-18.jpg",
-      status: "Aktif",
-    },
-    {
-      id: 3,
-      name: "Suparman S.Kom",
-      jabatan: "Backend Developer",
-      nip: "199201012021011003",
-      image: "/images/user/user-19.jpg",
-      status: "Aktif",
-    },
-  ]);
-
-  const itemsPerPage = 3;
-  const totalPages = Math.ceil(data.length / itemsPerPage);
-  const paginatedData = data.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
+  const [data, setData] = useState<Karyawan[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<Karyawan>({
@@ -73,34 +41,83 @@ export default function BasicTableKaryawan() {
     jabatan: "",
     nip: "",
     image: "",
-    status: "Aktif",
     alamat_lengkap: "",
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
-  const handleSubmit = () => {
-    if (editingId !== null) {
-      setData((prev) =>
-        prev.map((item) =>
-          item.id === editingId ? { ...form, id: editingId } : item
-        )
-      );
-    } else {
-      setData((prev) => [...prev, { ...form, id: Date.now() }]);
+  const itemsPerPage = 5;
+  const totalPages = Math.ceil(data.length / itemsPerPage);
+  const paginatedData = data.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  useEffect(() => {
+    loadKaryawan();
+  }, []);
+
+  const loadKaryawan = async () => {
+    try {
+      const res = await fetchKaryawanList();
+      const mappedData: Karyawan[] = res.data.map((item: any) => ({
+        id: item.id_user,
+        name: item.nama_lengkap,
+        jabatan: item.jabatan,
+        nip: item.nip,
+        image: `/uploads/${item.image_profil}`,
+        email: item.user?.email || "",
+        role: item.user?.role || "KARYAWAN",
+        alamat_lengkap: item.alamat_lengkap,
+      }));
+      setData(mappedData);
+    } catch (error) {
+      console.error("Gagal mengambil data karyawan", error);
     }
-    setIsOpen(false);
-    setEditingId(null);
+  };
+
+  const handleSubmit = async () => {
+    try {
+      const payload = {
+        nama: form.name,
+        email: form.email || "",
+        password: form.password || "",
+        role: form.role || "KARYAWAN",
+        nip: form.nip,
+        jabatan: form.jabatan,
+        alamat_lengkap: form.alamat_lengkap || "",
+        imageFile: imageFile || undefined,
+      };
+
+      if (editingId !== null) {
+        await editUserForm({ ...payload, id_user: editingId });
+      } else {
+        await registerUser(payload);
+      }
+
+      setIsOpen(false);
+      setEditingId(null);
+      loadKaryawan();
+    } catch (err) {
+      console.error("Gagal simpan karyawan", err);
+    }
   };
 
   const handleEdit = (karyawan: Karyawan) => {
-    setForm(karyawan);
+    setForm({
+      ...form,
+      ...karyawan,
+      password: "",
+    });
     setEditingId(karyawan.id);
     setIsOpen(true);
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const fileURL = URL.createObjectURL(e.target.files[0]);
+      const file = e.target.files[0];
+      const fileURL = URL.createObjectURL(file);
       setForm({ ...form, image: fileURL });
+      setImageFile(file);
     }
   };
 
@@ -119,9 +136,9 @@ export default function BasicTableKaryawan() {
               jabatan: "",
               nip: "",
               image: "",
-              status: "Aktif",
               alamat_lengkap: "",
             });
+            setImageFile(null);
             setEditingId(null);
             setIsOpen(true);
           }}
@@ -135,7 +152,10 @@ export default function BasicTableKaryawan() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableCell isHeader className="px-4 py-3 font-semibold text-left">
+              <TableCell
+                isHeader
+                className="px-4 py-3 font-semibold text-center"
+              >
                 Foto
               </TableCell>
               <TableCell isHeader className="px-4 py-3 font-semibold text-left">
@@ -148,37 +168,34 @@ export default function BasicTableKaryawan() {
                 NIP
               </TableCell>
               <TableCell isHeader className="px-4 py-3 font-semibold text-left">
-                Status
-              </TableCell>
-              <TableCell isHeader className="px-4 py-3 font-semibold text-left">
                 Aksi
               </TableCell>
             </TableRow>
           </TableHeader>
-
           <TableBody>
             {paginatedData.map((karyawan) => (
-              <TableRow key={karyawan.id}>
-                <TableCell className="px-4 py-3">
-                  <img
-                    src={karyawan.image}
-                    alt={karyawan.name}
-                    className="w-12 h-12 rounded-full object-cover border"
-                  />
+              <TableRow key={karyawan.id} className="align-middle">
+                <TableCell className="text-center">
+                  <div className="flex justify-center items-center">
+                    <img
+                      src={karyawan.image}
+                      alt={karyawan.name}
+                      onError={(e) =>
+                        (e.currentTarget.src = "/images/default.jpg")
+                      }
+                      className="w-12 h-12 rounded-full object-cover border m-2"
+                    />
+                  </div>
                 </TableCell>
-                <TableCell className="px-4 py-3">{karyawan.name}</TableCell>
-                <TableCell className="px-4 py-3">{karyawan.jabatan}</TableCell>
-                <TableCell className="px-4 py-3">{karyawan.nip}</TableCell>
-                <TableCell className="px-4 py-3">
-                  <Badge
-                    color={karyawan.status === "Aktif" ? "success" : "error"}
+                <TableCell>{karyawan.name}</TableCell>
+                <TableCell>{karyawan.jabatan}</TableCell>
+                <TableCell>{karyawan.nip}</TableCell>
+                <TableCell>
+                  <Button
                     size="sm"
+                    className="bg-blue-600 hover:bg-blue-700 px-3 py-1 text-white rounded"
+                    onClick={() => handleEdit(karyawan)}
                   >
-                    {karyawan.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="px-4 py-3">
-                  <Button size="sm" onClick={() => handleEdit(karyawan)}>
                     Edit
                   </Button>
                 </TableCell>
@@ -259,10 +276,19 @@ export default function BasicTableKaryawan() {
                 </div>
                 <div className="col-span-2 lg:col-span-1">
                   <Label>Role</Label>
-                  <Input
+                  <select
                     value={form.role}
-                    onChange={(e) => setForm({ ...form, role: e.target.value })}
-                  />
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        role: e.target.value as RoleType,
+                      })
+                    }
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-150 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                  >
+                    <option value="KARYAWAN">KARYAWAN</option>
+                    <option value="ADMIN">ADMIN</option>
+                  </select>
                 </div>
                 <div className="col-span-2 lg:col-span-1">
                   <Label>NIP</Label>
@@ -291,6 +317,9 @@ export default function BasicTableKaryawan() {
                     <img
                       src={form.image}
                       alt="preview"
+                      onError={(e) =>
+                        (e.currentTarget.src = "/images/default.jpg")
+                      }
                       className="mt-2 w-20 h-20 object-cover rounded"
                     />
                   )}
