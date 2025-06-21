@@ -221,7 +221,7 @@ export async function editUserWithPasswordForm(fields: {
 }
 
 /** Fetch karyawan */
-export async function fetchKaryawanList(limit = 5, offset = 0) {
+export async function fetchKaryawanList(limit = 10, offset = 0) {
   const resp = await api.get(`${ApiBase.karyawanAll}`, {
     params: { limit, offset },
   });
@@ -229,7 +229,9 @@ export async function fetchKaryawanList(limit = 5, offset = 0) {
 }
 
 /** Fetch seluruh data absensi */
-export async function fetchAbsensiAll(tahunbulan: string): Promise<KaryawanData[]> {
+export async function fetchAbsensiAll(
+  tahunbulan: string
+): Promise<KaryawanData[]> {
   const resp = await api.post(ApiBase.presensiList, { tahunbulan });
   return resp.data.data;
 }
@@ -244,11 +246,32 @@ export async function fetchLaporanAll(
 
 /** Fetch download excel */
 export async function fetchExportExcel(tahunbulan: string): Promise<Blob> {
-  const response = await api.get(
-    `${ApiBase.export}?tahunbulan=${tahunbulan}`,
-    {
-      responseType: "blob", 
-    }
-  );
+  const response = await api.get(`${ApiBase.export}?tahunbulan=${tahunbulan}`, {
+    responseType: "blob",
+  });
   return response.data;
+}
+
+export async function fetchDashboardStatistik(): Promise<any> {
+  const resp = await api.get(ApiBase.dashboardStatistik);
+  const { grafik_bulanan, grafik_mingguan, ...rest } = resp.data.data;
+
+  // Ubah grafik_bulanan → array of { label, count }
+  const chart_bulanan = grafik_bulanan.map((count: number, i: number) => ({
+    label: String(i + 1),
+    count,
+  }));
+
+  // Ubah grafik_mingguan → S, S, R, K, J, S, M
+  const hari = ["S", "S", "R", "K", "J", "S", "M"];
+  const chart_mingguan = grafik_mingguan.map((count: number, i: number) => ({
+    label: hari[i] || `H${i + 1}`,
+    count,
+  }));
+
+  return {
+    ...rest,
+    chart_bulanan,
+    chart_mingguan,
+  };
 }

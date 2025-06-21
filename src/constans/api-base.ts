@@ -14,7 +14,7 @@ const ApiBase = {
   presensiList: "/api/v1-presensi/lists",
   checkin: "/api/v1-presensi/checkin",
   checkinUpdate: "/api/v1-presensi/checkin",
-  statistik: "/api/v1-presensi/statistik",
+  dashboardStatistik: "/api/v1-presensi/dashboard",
   export: "/api/v1-presensi/export",
   reportAll: "/api/v1-presensi/report/all",
 

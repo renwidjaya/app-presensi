@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -8,17 +9,27 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import { fetchDashboardStatistik } from "../../api";
 
-const data = [
-  { name: "S", value: 4 },
-  { name: "S", value: 5 },
-  { name: "K", value: 6 },
-  { name: "K", value: 7 },
-  { name: "J", value: 9 },
-  { name: "S", value: 8 },
-];
+interface ChartData {
+  label: string;
+  count: number;
+}
 
 export default function MonthlyPresenceChart() {
+  const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardStatistik()
+      .then((res) => {
+        setChartData(res.chart_bulanan || []);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <p>Loading chart...</p>;
+
   return (
     <div className="bg-white rounded-lg p-6 shadow border hover:shadow-md transition-shadow">
       <div className="flex justify-between items-center mb-4">
@@ -26,13 +37,13 @@ export default function MonthlyPresenceChart() {
         <span className="text-xs text-gray-400">Update: Minggu ini</span>
       </div>
       <ResponsiveContainer width="100%" height={220}>
-        <BarChart data={data} barSize={30}>
+        <BarChart data={chartData} barSize={30}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-          <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+          <XAxis dataKey="label" tick={{ fontSize: 12 }} />
           <YAxis domain={[0, 12]} tick={{ fontSize: 12 }} />
           <Tooltip contentStyle={{ fontSize: 12 }} />
           <Legend />
-          <Bar dataKey="value" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+          <Bar dataKey="count" fill="#3b82f6" radius={[6, 6, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
