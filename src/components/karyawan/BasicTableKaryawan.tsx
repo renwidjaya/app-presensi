@@ -198,8 +198,8 @@ export default function BasicTableKaryawan() {
       await destroyUser(confirmDeleteId);
 
       // Refresh data user (ganti sesuai konteksmu, contoh fetchUsers())
-      loadKaryawan();
-
+      await loadKaryawan();
+      
       setAlert({
         variant: "success",
         title: "User Dihapus",
