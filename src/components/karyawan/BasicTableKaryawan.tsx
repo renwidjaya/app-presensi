@@ -11,7 +11,12 @@ import Label from "../form/Label";
 import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
-import { editUserForm, fetchKaryawanList, registerUser } from "../../api";
+import {
+  destroyUser,
+  editUserForm,
+  fetchKaryawanList,
+  registerUser,
+} from "../../api";
 import { EnumRole } from "../../utils/storage";
 import Alert from "../ui/alert/Alert";
 
@@ -63,6 +68,8 @@ export default function BasicTableKaryawan() {
     alamat_lengkap: "",
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [alert, setAlert] = useState<{
     variant: "success" | "error";
     title: string;
@@ -184,6 +191,36 @@ export default function BasicTableKaryawan() {
     }
   };
 
+  const handleConfirmDelete = async () => {
+    if (!confirmDeleteId) return;
+    setIsDeleting(true);
+    try {
+      await destroyUser(confirmDeleteId);
+
+      // Refresh data user (ganti sesuai konteksmu, contoh fetchUsers())
+      loadKaryawan();
+
+      setAlert({
+        variant: "success",
+        title: "User Dihapus",
+        message: "Data user berhasil dihapus.",
+      });
+    } catch (error: unknown) {
+      console.error("Gagal menghapus user:", error);
+      setAlert({
+        variant: "error",
+        title: "Gagal Menghapus",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Terjadi kesalahan saat menghapus user.",
+      });
+    } finally {
+      setIsDeleting(false);
+      setConfirmDeleteId(null);
+    }
+  };
+
   useEffect(() => {
     if (alert) {
       const timer = setTimeout(() => setAlert(null), 5000);
@@ -269,14 +306,21 @@ export default function BasicTableKaryawan() {
                 <TableCell>{karyawan.name}</TableCell>
                 <TableCell>{karyawan.jabatan}</TableCell>
                 <TableCell>{karyawan.nip}</TableCell>
-                <TableCell>
-                  <Button
-                    size="sm"
-                    className="bg-blue-600 hover:bg-blue-700 px-3 py-1 text-white rounded"
+                <TableCell className="px-4 py-3 space-x-2">
+                  <button
                     onClick={() => handleEdit(karyawan)}
+                    className="text-yellow-500 hover:text-yellow-600 text-lg"
+                    title="Edit"
                   >
-                    Edit
-                  </Button>
+                    ✏️
+                  </button>
+                  <button
+                    onClick={() => setConfirmDeleteId(karyawan.id)}
+                    className="text-red-600 hover:text-red-700 text-lg"
+                    title="Hapus"
+                  >
+                    🗑️
+                  </button>
                 </TableCell>
               </TableRow>
             ))}
@@ -418,6 +462,37 @@ export default function BasicTableKaryawan() {
               </Button>
             </div>
           </form>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={confirmDeleteId !== null}
+        onClose={() => setConfirmDeleteId(null)}
+        className="max-w-md m-4"
+      >
+        <div className="p-6 text-center">
+          <h4 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+            Konfirmasi Hapus
+          </h4>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
+            Apakah Anda yakin ingin menghapus data user ini?
+          </p>
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setConfirmDeleteId(null)}
+              disabled={isDeleting}
+            >
+              Batal
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Menghapus..." : "Hapus"}
+            </Button>
+          </div>
         </div>
       </Modal>
     </div>

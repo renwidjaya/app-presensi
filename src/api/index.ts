@@ -139,6 +139,12 @@ export async function fetchProfilePhoto(): Promise<Blob> {
   return resp.data;
 }
 
+/** user destroy */
+export async function destroyUser(id_user: number): Promise<ApiResponse<null>> {
+  const resp = await api.delete<ApiResponse<null>>(`${ApiBase.userDestroy}${id_user}`);
+  return resp.data;
+}
+
 /** Update data profile + foto */
 export async function updateProfileForm(
   fields: UserProfile & { imageFile?: File }

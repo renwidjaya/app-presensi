@@ -7,6 +7,7 @@ const ApiBase = {
   register: "/api/v1-auth/register",
   editUser: "/api/v1-auth/user/",
   userDetail: "/api/v1-auth/user",
+  userDestroy: "/api/v1-auth/user/",
 
   // Presensi
   karyawanAll: "/api/v1-presensi/karyawan",
