@@ -55,6 +55,17 @@ interface DashboardStatistikResponse {
   grafik_mingguan: number[];
 }
 
+export interface PresensiPayload {
+  id_karyawan: string;
+  tanggal: string;
+  jam_masuk: string;
+  jam_pulang: string;
+  lokasi_masuk: string;
+  lokasi_pulang: string;
+  total_jam_lembur: string;
+  kategori: string;
+}
+
 /** Gabungan user + karyawan */
 export type UserProfile = StoredUserData & KaryawanData;
 
@@ -337,4 +348,22 @@ export async function fetchDashboardStatistik(): Promise<{
     chart_bulanan,
     chart_mingguan,
   };
+}
+
+/** Store Presensi */
+export async function storePresensi(payload: PresensiPayload) {
+  const res = await api.post(ApiBase.storePresensi, payload);
+  return res.data;
+}
+
+/** Update Presensi */
+export async function updatePresensi(id: number, payload: PresensiPayload) {
+  const res = await api.put(`${ApiBase.updatePresensi}${id}`, payload);
+  return res.data;
+}
+
+/** Destroy Presensi */
+export async function destroyPresensi(id: number) {
+  const res = await api.delete(`${ApiBase.destroyPresensi}${id}`);
+  return res.data;
 }

@@ -17,6 +17,9 @@ const ApiBase = {
   dashboardStatistik: "/api/v1-presensi/dashboard",
   export: "/api/v1-presensi/export",
   reportAll: "/api/v1-presensi/report/all",
+  storePresensi: "/api/v1-presensi/store",
+  updatePresensi: "/api/v1-presensi/update/",
+  destroyPresensi: "/api/v1-presensi/destroy/",
 
   // Photo Upload
   profilPhoto: "/profil",

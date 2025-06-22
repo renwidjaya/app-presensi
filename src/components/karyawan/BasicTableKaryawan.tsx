@@ -13,6 +13,7 @@ import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import { editUserForm, fetchKaryawanList, registerUser } from "../../api";
 import { EnumRole } from "../../utils/storage";
+import Alert from "../ui/alert/Alert";
 
 interface KaryawanListItem {
   id_karyawan: number;
@@ -62,6 +63,11 @@ export default function BasicTableKaryawan() {
     alamat_lengkap: "",
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [alert, setAlert] = useState<{
+    variant: "success" | "error";
+    title: string;
+    message: string;
+  } | null>(null);
 
   const itemsPerPage = 10;
   const totalPages = Math.ceil(data.length / itemsPerPage);
@@ -109,8 +115,18 @@ export default function BasicTableKaryawan() {
 
       if (editingId !== null) {
         await editUserForm({ ...payload, id_user: editingId });
+        setAlert({
+          variant: "success",
+          title: "Berhasil",
+          message: "Data karyawan berhasil diperbarui.",
+        });
       } else {
         await registerUser(payload);
+        setAlert({
+          variant: "success",
+          title: "Berhasil",
+          message: "Data karyawan berhasil ditambahkan.",
+        });
       }
 
       setIsOpen(false);
@@ -119,8 +135,13 @@ export default function BasicTableKaryawan() {
       loadKaryawan();
     } catch (err) {
       console.error("Gagal simpan karyawan", err);
+      setAlert({
+        variant: "error",
+        title: "Gagal",
+        message: "Terjadi kesalahan saat menyimpan data karyawan.",
+      });
     } finally {
-      setIsSaving(false); // ✅ wajib untuk menghilangkan loading
+      setIsSaving(false);
     }
   };
 
@@ -140,23 +161,47 @@ export default function BasicTableKaryawan() {
       const file = e.target.files[0];
 
       if (!file.type.startsWith("image/")) {
-        alert("Hanya file gambar yang diperbolehkan");
+        setAlert({
+          variant: "error",
+          title: "Format Tidak Didukung",
+          message: "Hanya file gambar (JPG, PNG, dll) yang diperbolehkan.",
+        });
         return;
       }
 
       if (file.size > 2 * 1024 * 1024) {
-        alert("Ukuran file tidak boleh lebih dari 2MB");
+        setAlert({
+          variant: "error",
+          title: "Ukuran Terlalu Besar",
+          message: "Ukuran gambar tidak boleh melebihi 2MB.",
+        });
         return;
       }
 
       const fileURL = URL.createObjectURL(file);
-      setForm({ ...form, image: fileURL });
+      setForm((prev) => ({ ...prev, image: fileURL }));
       setImageFile(file);
     }
   };
 
+  useEffect(() => {
+    if (alert) {
+      const timer = setTimeout(() => setAlert(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [alert]);
+
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+      {alert && (
+        <div className="px-4 pt-4">
+          <Alert
+            variant={alert.variant}
+            title={alert.title}
+            message={alert.message}
+          />
+        </div>
+      )}
       <div className="flex justify-between items-center px-4 py-3 border-b">
         <h3 className="text-lg font-semibold">Data Karyawan</h3>
         <button
