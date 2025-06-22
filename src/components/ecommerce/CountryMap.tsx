@@ -7,6 +7,12 @@ interface CountryMapProps {
   mapColor?: string;
 }
 
+interface CustomMarkerStyle {
+  fill?: string;
+  r?: number;
+  [key: string]: string | number | undefined;
+}
+
 const CountryMap: React.FC<CountryMapProps> = ({ mapColor }) => {
   return (
     <VectorMap
@@ -15,8 +21,8 @@ const CountryMap: React.FC<CountryMapProps> = ({ mapColor }) => {
       markerStyle={{
         initial: {
           fill: "#465FFF",
-          r: 4, // Custom radius for markers
-        } as any, // Type assertion to bypass strict CSS property checks
+          r: 4,
+        } as CustomMarkerStyle,
       }}
       markersSelectable={true}
       markers={[

@@ -12,8 +12,25 @@ import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import { editUserForm, fetchKaryawanList, registerUser } from "../../api";
+import { EnumRole } from "../../utils/storage";
 
-type RoleType = "ADMIN" | "KARYAWAN";
+interface KaryawanListItem {
+  id_karyawan: number;
+  id_user: number;
+  nama_lengkap: string;
+  nip: string;
+  jabatan: string;
+  alamat_lengkap: string;
+  image_profil: string;
+  created_at: string;
+  updated_at: string;
+  user: {
+    email: string;
+    role: EnumRole;
+  };
+}
+
+type RoleType = EnumRole;
 
 interface Karyawan {
   id: number;
@@ -28,16 +45,17 @@ interface Karyawan {
 }
 
 export default function BasicTableKaryawan() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [data, setData] = useState<Karyawan[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<Karyawan>({
     id: 0,
     name: "",
     email: "",
     password: "",
-    role: "KARYAWAN",
+    role: EnumRole.Karyawan,
     jabatan: "",
     nip: "",
     image: "",
@@ -58,15 +76,15 @@ export default function BasicTableKaryawan() {
 
   const loadKaryawan = async () => {
     try {
-      const res = await fetchKaryawanList();
-      const mappedData: Karyawan[] = res.data.map((item: any) => ({
+      const res: KaryawanListItem[] = await fetchKaryawanList();
+      const mappedData: Karyawan[] = res.map((item) => ({
         id: item.id_user,
         name: item.nama_lengkap,
         jabatan: item.jabatan,
         nip: item.nip,
         image: item.image_profil,
-        email: item.user?.email || "",
-        role: item.user?.role || "KARYAWAN",
+        email: item.user.email,
+        role: item.user.role,
         alamat_lengkap: item.alamat_lengkap,
       }));
       setData(mappedData);
@@ -76,12 +94,13 @@ export default function BasicTableKaryawan() {
   };
 
   const handleSubmit = async () => {
+    setIsSaving(true);
     try {
       const payload = {
         nama: form.name,
         email: form.email || "",
         password: form.password || "",
-        role: form.role || "KARYAWAN",
+        role: form.role || EnumRole.Karyawan,
         nip: form.nip,
         jabatan: form.jabatan,
         alamat_lengkap: form.alamat_lengkap || "",
@@ -100,6 +119,8 @@ export default function BasicTableKaryawan() {
       loadKaryawan();
     } catch (err) {
       console.error("Gagal simpan karyawan", err);
+    } finally {
+      setIsSaving(false); // ✅ wajib untuk menghilangkan loading
     }
   };
 
@@ -145,7 +166,7 @@ export default function BasicTableKaryawan() {
               name: "",
               email: "",
               password: "",
-              role: "KARYAWAN",
+              role: EnumRole.Karyawan,
               jabatan: "",
               nip: "",
               image: "",
@@ -347,8 +368,8 @@ export default function BasicTableKaryawan() {
               >
                 Close
               </Button>
-              <Button size="sm" onClick={handleSubmit}>
-                Simpan
+              <Button size="sm" onClick={handleSubmit} disabled={isSaving}>
+                {isSaving ? "Menyimpan..." : "Simpan"}
               </Button>
             </div>
           </form>

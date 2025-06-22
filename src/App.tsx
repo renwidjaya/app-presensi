@@ -1,5 +1,9 @@
-import { Navigate } from "react-router";
-import { BrowserRouter as Router, Routes, Route } from "react-router";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 
 import Home from "./pages/Dashboard/Home";
 import AppLayout from "./layout/AppLayout";

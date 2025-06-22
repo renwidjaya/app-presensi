@@ -8,8 +8,23 @@ import {
 } from "../ui/table";
 import Badge from "../ui/badge/Badge";
 import { DownloadIcon } from "../../icons";
-import { fetchAbsensiAll, fetchExportExcel, KaryawanData } from "../../api";
+import { fetchAbsensiAll, fetchExportExcel } from "../../api";
 import { Modal } from "../ui/modal";
+import { KaryawanData } from "../../api";
+
+interface PresensiWithKaryawan {
+  id_absensi: number;
+  tanggal: string;
+  jam_masuk: string;
+  jam_pulang: string;
+  lokasi_masuk: string;
+  lokasi_pulang: string;
+  total_jam_lembur: string;
+  kategori: string;
+  foto_masuk: string;
+  foto_pulang: string;
+  karyawan: KaryawanData;
+}
 
 export default function BasicTableLaporan() {
   const itemsPerPage = 10;
@@ -47,8 +62,8 @@ export default function BasicTableLaporan() {
     load();
   }, [month]);
 
-  const allPresensi = data.flatMap((karyawan: any) =>
-    karyawan.presensis.map((p: any) => ({
+  const allPresensi: PresensiWithKaryawan[] = data.flatMap((karyawan) =>
+    (karyawan.presensis || []).map((p) => ({
       ...p,
       karyawan,
     }))
@@ -73,8 +88,6 @@ export default function BasicTableLaporan() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-
-      // Set filename
       link.download = `laporan-presensi-${month}.xlsx`;
       document.body.appendChild(link);
       link.click();

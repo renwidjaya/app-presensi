@@ -8,8 +8,23 @@ import {
 } from "../ui/table";
 import Badge from "../ui/badge/Badge";
 import Select from "react-select";
-import { fetchAbsensiAll, KaryawanData } from "../../api";
+import { fetchAbsensiAll } from "../../api";
 import { Modal } from "../ui/modal";
+import { KaryawanData } from "../../api";
+
+interface PresensiWithKaryawan {
+  id_absensi: number;
+  tanggal: string;
+  jam_masuk: string;
+  jam_pulang: string;
+  lokasi_masuk: string;
+  lokasi_pulang: string;
+  total_jam_lembur: string;
+  kategori: string;
+  foto_masuk: string;
+  foto_pulang: string;
+  karyawan: KaryawanData;
+}
 
 const months = [
   { label: "Januari", value: "01" },
@@ -68,8 +83,8 @@ export default function BasicTablePresensi() {
     load();
   }, [selectedMonth, selectedYear]);
 
-  const allPresensi = tableData.flatMap((karyawan: any) =>
-    karyawan.presensis.map((p: any) => ({
+  const allPresensi: PresensiWithKaryawan[] = tableData.flatMap((karyawan) =>
+    (karyawan.presensis || []).map((p) => ({
       ...p,
       karyawan,
     }))

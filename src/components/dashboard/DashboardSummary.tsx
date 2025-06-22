@@ -4,8 +4,8 @@ import { UserIcon, CheckLineIcon, CalenderIcon } from "../../icons";
 
 interface DashboardData {
   total_karyawan: number;
-  total_hadir_hari_ini: number;
-  total_hadir_bulan_ini: number;
+  hadir_hari_ini: number;
+  hadir_bulan_ini: number;
   periode: string;
 }
 
@@ -16,7 +16,12 @@ export default function DashboardSummary() {
   useEffect(() => {
     fetchDashboardStatistik()
       .then((res) => {
-        setData(res);
+        setData({
+          total_karyawan: res.total_karyawan,
+          hadir_hari_ini: res.hadir_hari_ini,
+          hadir_bulan_ini: res.hadir_bulan_ini,
+          periode: res.periode,
+        });
       })
       .finally(() => setLoading(false));
   }, []);
@@ -36,18 +41,14 @@ export default function DashboardSummary() {
         <div className="text-sm text-gray-500">Hadir Hari Ini</div>
         <div className="flex items-center gap-2 mt-1 text-xl font-semibold">
           <CheckLineIcon className="w-5 h-5" />
-          <span>
-            {data?.total_hadir_hari_ini ? data?.total_hadir_hari_ini : 0}
-          </span>
+          <span>{data?.hadir_hari_ini ?? 0}</span>
         </div>
       </div>
       <div className="bg-white rounded-lg p-4 shadow-sm border">
         <div className="text-sm text-gray-500">Hadir Bulan Ini</div>
         <div className="flex items-center gap-2 mt-1 text-xl font-semibold">
           <CheckLineIcon className="w-5 h-5" />
-          <span>
-            {data?.total_hadir_bulan_ini ? data?.total_hadir_bulan_ini : 0}
-          </span>
+          <span>{data?.hadir_bulan_ini ?? 0}</span>
         </div>
       </div>
       <div className="bg-white rounded-lg p-4 shadow-sm border">

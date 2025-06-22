@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import Input from "../form/input/InputField";
 import { useModal } from "../../hooks/useModal";
 import { fetchProfile, updateProfileForm } from "../../api";
-import LocalStorageService, { UserData } from "../../utils/storage";
+import LocalStorageService, { EnumRole, UserData } from "../../utils/storage";
 
 export default function UserMetaCard() {
   const { isOpen, openModal, closeModal } = useModal();
@@ -59,27 +59,33 @@ export default function UserMetaCard() {
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
+
     try {
+      // Konversi role ke EnumRole secara aman
+      const role: EnumRole =
+        user.role === "ADMIN" ? EnumRole.Admin : EnumRole.Karyawan;
+
       await updateProfileForm({
         id_user: user.id_user,
+        id_karyawan: user.id_karyawan,
         nama,
+        nama_lengkap: nama,
         jabatan,
         email,
-        role: user.role ?? "",
+        role,
         nip,
         alamat_lengkap: alamat,
-        imageFile: selectedPhoto ?? undefined,
+        imageFile: selectedPhoto || undefined,
       });
 
-      // Fetch profile terbaru & update foto URL
       const refreshed = await fetchProfile(user.id_user);
       setUser(refreshed);
-      setSelectedPhoto(null);
 
       if (refreshed.image_profil) {
         setPhotoUrl(refreshed.image_profil);
       }
 
+      setSelectedPhoto(null);
       closeModal();
     } catch (err) {
       console.error("Error updating profile:", err);

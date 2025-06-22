@@ -1,20 +1,11 @@
 import api from "./instance";
 import LocalStorageService, {
+  EnumRole,
   UserData as StoredUserData,
 } from "../utils/storage";
 import ApiBase from "../constans/api-base";
 
-/** Interface untuk data karyawan */
-export interface KaryawanData {
-  id_karyawan: number;
-  nama_lengkap: string;
-  nip: string;
-  jabatan: string;
-  alamat_lengkap: string;
-  image_profil?: string;
-  presensis?: IPresensi[];
-}
-
+/** Interface untuk data presensi */
 interface IPresensi {
   id_absensi: number;
   tanggal: string;
@@ -28,15 +19,61 @@ interface IPresensi {
   foto_pulang: string;
 }
 
+/** Interface untuk data karyawan */
+export interface KaryawanData {
+  id_karyawan: number;
+  nama_lengkap: string;
+  nip: string;
+  jabatan: string;
+  alamat_lengkap: string;
+  image_profil?: string;
+  presensis?: IPresensi[];
+}
+
+export interface KaryawanListItem {
+  id_karyawan: number;
+  id_user: number;
+  nama_lengkap: string;
+  nip: string;
+  jabatan: string;
+  alamat_lengkap: string;
+  image_profil: string;
+  created_at: string;
+  updated_at: string;
+  user: {
+    email: string;
+    role: EnumRole;
+  };
+}
+
+interface DashboardStatistikResponse {
+  total_karyawan: number;
+  hadir_hari_ini: number;
+  hadir_bulan_ini: number;
+  periode: string;
+  grafik_bulanan: number[];
+  grafik_mingguan: number[];
+}
+
 /** Gabungan user + karyawan */
 export type UserProfile = StoredUserData & KaryawanData;
+
+/** Struktur response umum */
+interface ApiResponse<T> {
+  data: T;
+  message?: string;
+  success?: boolean;
+}
 
 /** Login */
 export async function login(
   email: string,
   password: string
 ): Promise<{ token: string; user: StoredUserData }> {
-  const resp = await api.post(ApiBase.login, { email, password });
+  const resp = await api.post<{ token: string; data: StoredUserData }>(
+    ApiBase.login,
+    { email, password }
+  );
 
   const { token, data: user } = resp.data;
 
@@ -48,7 +85,14 @@ export async function login(
 
 /** Fetch profile lengkap */
 export async function fetchProfile(id_user: number): Promise<UserProfile> {
-  const resp = await api.get(`${ApiBase.userDetail}/${id_user}`);
+  const resp = await api.get<
+    ApiResponse<{
+      nama: string;
+      email: string;
+      role: EnumRole;
+      karyawan: KaryawanData;
+    }>
+  >(`${ApiBase.userDetail}/${id_user}`);
 
   const { nama, email, role, karyawan } = resp.data.data;
 
@@ -76,44 +120,33 @@ export async function fetchProfilePhoto(): Promise<Blob> {
     throw new Error("Profile photo not set");
   }
 
-  const resp = await api.get(`${ApiBase.profilPhoto}/${user.image_profil}`, {
-    responseType: "blob",
-  });
+  const resp = await api.get<Blob>(
+    `${ApiBase.profilPhoto}/${user.image_profil}`,
+    { responseType: "blob" }
+  );
 
   return resp.data;
 }
 
 /** Update data profile + foto */
-export async function updateProfileForm(fields: {
-  id_user: number;
-  nama: string;
-  email: string;
-  role: string;
-  nip: string;
-  jabatan: string;
-  alamat_lengkap: string;
-  imageFile?: File;
-}): Promise<StoredUserData> {
+export async function updateProfileForm(
+  fields: UserProfile & { imageFile?: File }
+): Promise<StoredUserData> {
   const form = new FormData();
-  form.append("nama", fields.nama);
-  form.append("email", fields.email);
-  form.append("role", fields.role);
-  form.append("nip", fields.nip);
-  form.append("jabatan", fields.jabatan);
-  form.append("alamat_lengkap", fields.alamat_lengkap);
-
+  form.append("nama", fields.nama || "");
+  form.append("email", fields.email || "");
+  form.append("role", String(fields.role || "")); // fix di sini
+  form.append("nip", fields.nip || "");
+  form.append("jabatan", fields.jabatan || "");
+  form.append("alamat_lengkap", fields.alamat_lengkap || "");
   if (fields.imageFile) {
-    form.append("image_profil", fields.imageFile); // harus match dengan backend
+    form.append("image_profil", fields.imageFile);
   }
 
-  const resp = await api.post<{ message: string; data: StoredUserData }>(
+  const resp = await api.post<ApiResponse<StoredUserData>>(
     `${ApiBase.userDetail}/${fields.id_user}`,
     form,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    }
+    { headers: { "Content-Type": "multipart/form-data" } }
   );
 
   const updated = resp.data.data;
@@ -126,12 +159,12 @@ export async function registerUser(fields: {
   nama: string;
   email: string;
   password: string;
-  role: string;
+  role: EnumRole;
   nip: string;
   jabatan: string;
   alamat_lengkap: string;
   imageFile?: File;
-}): Promise<any> {
+}): Promise<ApiResponse<StoredUserData>> {
   const form = new FormData();
   form.append("nama", fields.nama);
   form.append("email", fields.email);
@@ -140,16 +173,17 @@ export async function registerUser(fields: {
   form.append("nip", fields.nip);
   form.append("jabatan", fields.jabatan);
   form.append("alamat_lengkap", fields.alamat_lengkap);
-
   if (fields.imageFile) {
     form.append("image_profil", fields.imageFile);
   }
 
-  const resp = await api.post(`${ApiBase.register}`, form, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  const resp = await api.post<ApiResponse<StoredUserData>>(
+    ApiBase.register,
+    form,
+    {
+      headers: { "Content-Type": "multipart/form-data" },
+    }
+  );
 
   return resp.data;
 }
@@ -159,12 +193,12 @@ export async function editUserForm(fields: {
   id_user: number;
   nama: string;
   email: string;
-  role: string;
+  role: EnumRole;
   nip: string;
   jabatan: string;
   alamat_lengkap: string;
   imageFile?: File;
-}): Promise<any> {
+}): Promise<ApiResponse<StoredUserData>> {
   const form = new FormData();
   form.append("nama", fields.nama);
   form.append("email", fields.email);
@@ -172,16 +206,15 @@ export async function editUserForm(fields: {
   form.append("nip", fields.nip);
   form.append("jabatan", fields.jabatan);
   form.append("alamat_lengkap", fields.alamat_lengkap);
-
   if (fields.imageFile) {
     form.append("image_profil", fields.imageFile);
   }
 
-  const resp = await api.post(`${ApiBase.editUser}${fields.id_user}`, form, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  const resp = await api.post<ApiResponse<StoredUserData>>(
+    `${ApiBase.editUser}${fields.id_user}`,
+    form,
+    { headers: { "Content-Type": "multipart/form-data" } }
+  );
 
   return resp.data;
 }
@@ -192,47 +225,55 @@ export async function editUserWithPasswordForm(fields: {
   nama: string;
   email: string;
   password: string;
-  role: string;
+  role: EnumRole;
   nip: string;
   jabatan: string;
   alamat_lengkap: string;
   imageFile?: File;
-}): Promise<any> {
+}): Promise<ApiResponse<StoredUserData>> {
   const form = new FormData();
   form.append("nama", fields.nama);
   form.append("email", fields.email);
-  form.append("password", fields.password); 
+  form.append("password", fields.password);
   form.append("role", fields.role);
   form.append("nip", fields.nip);
   form.append("jabatan", fields.jabatan);
   form.append("alamat_lengkap", fields.alamat_lengkap);
-
   if (fields.imageFile) {
     form.append("image_profil", fields.imageFile);
   }
 
-  const resp = await api.post(`${ApiBase.editUser}${fields.id_user}`, form, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  const resp = await api.post<ApiResponse<StoredUserData>>(
+    `${ApiBase.editUser}${fields.id_user}`,
+    form,
+    { headers: { "Content-Type": "multipart/form-data" } }
+  );
 
   return resp.data;
 }
 
 /** Fetch karyawan */
-export async function fetchKaryawanList(limit = 10, offset = 0) {
-  const resp = await api.get(`${ApiBase.karyawanAll}`, {
-    params: { limit, offset },
-  });
-  return resp.data; // biasanya return { data, total, message }
+export async function fetchKaryawanList(
+  limit = 10,
+  offset = 0
+): Promise<KaryawanListItem[]> {
+  const resp = await api.get<ApiResponse<KaryawanListItem[]>>(
+    ApiBase.karyawanAll,
+    {
+      params: { limit, offset },
+    }
+  );
+  return resp.data.data;
 }
 
 /** Fetch seluruh data absensi */
 export async function fetchAbsensiAll(
   tahunbulan: string
 ): Promise<KaryawanData[]> {
-  const resp = await api.post(ApiBase.presensiList, { tahunbulan });
+  const resp = await api.post<ApiResponse<KaryawanData[]>>(
+    ApiBase.presensiList,
+    { tahunbulan }
+  );
   return resp.data.data;
 }
 
@@ -240,37 +281,59 @@ export async function fetchAbsensiAll(
 export async function fetchLaporanAll(
   tahunbulan: string
 ): Promise<KaryawanData[]> {
-  const resp = await api.get(`${ApiBase.reportAll}?tahunbulan=${tahunbulan}`);
+  const resp = await api.get<ApiResponse<KaryawanData[]>>(
+    `${ApiBase.reportAll}?tahunbulan=${tahunbulan}`
+  );
   return resp.data.data;
 }
 
 /** Fetch download excel */
 export async function fetchExportExcel(tahunbulan: string): Promise<Blob> {
-  const response = await api.get(`${ApiBase.export}?tahunbulan=${tahunbulan}`, {
-    responseType: "blob",
-  });
+  const response = await api.get<Blob>(
+    `${ApiBase.export}?tahunbulan=${tahunbulan}`,
+    { responseType: "blob" }
+  );
   return response.data;
 }
 
-export async function fetchDashboardStatistik(): Promise<any> {
-  const resp = await api.get(ApiBase.dashboardStatistik);
-  const { grafik_bulanan, grafik_mingguan, ...rest } = resp.data.data;
+/** Fetch statistik dashboard */
+export async function fetchDashboardStatistik(): Promise<{
+  total_karyawan: number;
+  hadir_hari_ini: number;
+  hadir_bulan_ini: number;
+  periode: string;
+  chart_bulanan: { label: string; count: number }[];
+  chart_mingguan: { label: string; count: number }[];
+}> {
+  const resp = await api.get<ApiResponse<DashboardStatistikResponse>>(
+    ApiBase.dashboardStatistik
+  );
 
-  // Ubah grafik_bulanan → array of { label, count }
-  const chart_bulanan = grafik_bulanan.map((count: number, i: number) => ({
+  const {
+    total_karyawan,
+    hadir_hari_ini,
+    hadir_bulan_ini,
+    periode,
+    grafik_bulanan,
+    grafik_mingguan,
+  } = resp.data.data;
+
+  const chart_bulanan = grafik_bulanan.map((count, i) => ({
     label: String(i + 1),
     count,
   }));
 
-  // Ubah grafik_mingguan → S, S, R, K, J, S, M
   const hari = ["S", "S", "R", "K", "J", "S", "M"];
-  const chart_mingguan = grafik_mingguan.map((count: number, i: number) => ({
+  const chart_mingguan = grafik_mingguan.map((count, i) => ({
     label: hari[i] || `H${i + 1}`,
     count,
   }));
 
   return {
-    ...rest,
+    total_karyawan,
+    hadir_hari_ini,
+    hadir_bulan_ini,
+    periode,
     chart_bulanan,
     chart_mingguan,
   };
