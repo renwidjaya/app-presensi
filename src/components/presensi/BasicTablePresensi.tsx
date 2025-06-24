@@ -439,22 +439,38 @@ export default function BasicTablePresensi() {
         </Table>
       </div>
 
-      <div className="flex justify-between items-center p-4 border-t border-gray-100">
+      <div className="flex flex-wrap items-center justify-between gap-2 w-full">
         <span className="text-sm text-gray-600">
-          Page {currentPage} of {totalPages}
+          Menampilkan {paginatedData.length} dari halaman {currentPage}
         </span>
-        <div className="flex gap-2">
+
+        <div className="flex flex-wrap items-center gap-1">
           <button
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
             disabled={currentPage === 1}
-            className="px-3 py-1 text-sm border rounded disabled:opacity-50"
+            className="px-2 py-1 text-sm border rounded disabled:opacity-50"
           >
             Previous
           </button>
+
+          {Array.from({ length: totalPages }, (_, i) => (
+            <button
+              key={i + 1}
+              onClick={() => setCurrentPage(i + 1)}
+              className={`px-3 py-1 text-sm rounded border ${
+                currentPage === i + 1
+                  ? "bg-blue-600 text-white"
+                  : "bg-white text-gray-800"
+              }`}
+            >
+              {i + 1}
+            </button>
+          ))}
+
           <button
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
-            className="px-3 py-1 text-sm border rounded disabled:opacity-50"
+            className="px-2 py-1 text-sm border rounded disabled:opacity-50"
           >
             Next
           </button>

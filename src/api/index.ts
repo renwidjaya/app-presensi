@@ -271,7 +271,7 @@ export async function editUserWithPasswordForm(fields: {
 
 /** Fetch karyawan */
 export async function fetchKaryawanList(
-  limit = 10,
+  limit = 50,
   offset = 0
 ): Promise<KaryawanListItem[]> {
   const resp = await api.get<ApiResponse<KaryawanListItem[]>>(
